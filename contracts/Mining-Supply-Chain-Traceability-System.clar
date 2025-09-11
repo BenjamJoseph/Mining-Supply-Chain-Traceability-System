@@ -7,6 +7,10 @@
 
 (define-data-var material-counter uint u0)
 (define-data-var transfer-counter uint u0)
+(define-data-var mine-quantity uint u0)
+(define-data-var transport-quantity uint u0)
+(define-data-var refinery-quantity uint u0)
+(define-data-var export-quantity uint u0)
 
 (define-map participants principal 
     {
@@ -100,6 +104,7 @@
         )
         (map-set material-history material-id (list))
         (var-set material-counter material-id)
+        (update-stage-quantity "mine" quantity true)
         (ok material-id)
     )
 )
@@ -150,12 +155,14 @@
                 }
             )
         )
-        
-        (map-set material-history material-id 
+
+        (map-set material-history material-id
             (unwrap-panic (as-max-len? (append current-history transfer-id) u50))
         )
-        
+
         (var-set transfer-counter transfer-id)
+        (update-stage-quantity (get current-stage material) (get quantity material) false)
+        (update-stage-quantity new-stage (get quantity material) true)
         (ok transfer-id)
     )
 )
@@ -208,6 +215,37 @@
     )
 )
 
+(define-private (update-stage-quantity (stage (string-ascii 20)) (quantity uint) (is-add bool))
+    (if is-add
+        (if (is-eq stage "mine")
+            (var-set mine-quantity (+ (var-get mine-quantity) quantity))
+            (if (is-eq stage "transport")
+                (var-set transport-quantity (+ (var-get transport-quantity) quantity))
+                (if (is-eq stage "refinery")
+                    (var-set refinery-quantity (+ (var-get refinery-quantity) quantity))
+                    (if (is-eq stage "export")
+                        (var-set export-quantity (+ (var-get export-quantity) quantity))
+                        false
+                    )
+                )
+            )
+        )
+        (if (is-eq stage "mine")
+            (var-set mine-quantity (- (var-get mine-quantity) quantity))
+            (if (is-eq stage "transport")
+                (var-set transport-quantity (- (var-get transport-quantity) quantity))
+                (if (is-eq stage "refinery")
+                    (var-set refinery-quantity (- (var-get refinery-quantity) quantity))
+                    (if (is-eq stage "export")
+                        (var-set export-quantity (- (var-get export-quantity) quantity))
+                        false
+                    )
+                )
+            )
+        )
+    )
+)
+
 (define-read-only (get-material (material-id uint))
     (map-get? materials material-id)
 )
@@ -254,4 +292,20 @@
         )
         false
     )
+)
+
+(define-read-only (get-mine-quantity)
+    (var-get mine-quantity)
+)
+
+(define-read-only (get-transport-quantity)
+    (var-get transport-quantity)
+)
+
+(define-read-only (get-refinery-quantity)
+    (var-get refinery-quantity)
+)
+
+(define-read-only (get-export-quantity)
+    (var-get export-quantity)
 )
