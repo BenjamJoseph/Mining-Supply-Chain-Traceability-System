@@ -22,7 +22,8 @@ The system tracks materials through four key stages:
 ### Core Functionality
 - ✅ **Participant Registration** - Verify companies in the supply chain
 - 📋 **Material Registration** - Track materials from source
-- 🔄 **Material Transfers** - Secure handoffs between stages
+- 📦 **Batch Material Registration** - Register multiple materials in a single transaction
+- � **Material Transfers** - Secure handoffs between stages
 - 📍 **GPS Tracking** - Real-time location data
 - 🔍 **IoT Integration** - Sensor data for verification
 - 📜 **Ethical Certificates** - Digital proof of ethical sourcing
@@ -200,3 +201,33 @@ For questions or support, please open an issue on GitHub or contact the developm
 ---
 
 **Built with ❤️ using Stacks blockchain and Clarity smart contracts**
+
+### Emergency Recall
+- 🚨 **Emergency Recall** - Contract owner can recall materials to previous stages for quality or compliance issues
+
+### 6. Emergency Recall (Contract Owner Only)
+
+```clarity
+(contract-call? .mining-supply-chain emergency-recall
+    u1
+    "refinery")
+```
+
+### Key Functions
+- `emergency-recall` - Recall materials to previous stages for emergency situations
+
+### Valid Recall Transitions
+
+The system allows emergency recalls to previous stages:
+
+```
+Export ← Refinery ← Transport ← Mine
+```
+
+### Security Features
+
+- **Emergency recall** restricted to contract owner for critical situations
+
+### Supply Chain Verification
+
+5. 🚨 Emergency recalls are tracked and can affect certification status

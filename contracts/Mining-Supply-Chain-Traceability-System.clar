@@ -109,6 +109,18 @@
     )
 )
 
+(define-public (batch-register-materials
+    (batch-materials (list 10 {material-type: (string-ascii 20), origin-mine: (string-ascii 100), quantity: uint, gps-latitude: (string-ascii 20), gps-longitude: (string-ascii 20), iot-sensor-id: (string-ascii 50)})))
+    (let
+        (
+            (participant-info (unwrap! (map-get? participants tx-sender) ERR_UNAUTHORIZED))
+        )
+        (asserts! (is-eq (get role participant-info) "mine") ERR_UNAUTHORIZED)
+        (asserts! (get verified participant-info) ERR_UNAUTHORIZED)
+        (ok (fold batch-register-helper batch-materials (list)))
+    )
+)
+
 (define-public (transfer-material
     (material-id uint)
     (to-participant principal)
@@ -199,10 +211,32 @@
         (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_UNAUTHORIZED)
         (asserts! (is-eq (get current-stage material) "export") ERR_INVALID_STAGE)
         (asserts! (is-eq (get status material) "received") ERR_INVALID_STATUS)
-        
+
         (map-set materials material-id
             (merge material { ethical-certificate: true, status: "certified" })
         )
+        (ok true)
+    )
+)
+
+(define-public (emergency-recall (material-id uint) (new-stage (string-ascii 20)))
+    (let
+        (
+            (material (unwrap! (map-get? materials material-id) ERR_NOT_FOUND))
+        )
+        (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_UNAUTHORIZED)
+        (asserts! (is-valid-recall-transition (get current-stage material) new-stage) ERR_INVALID_STAGE)
+        (map-set materials material-id
+            (merge material
+                {
+                    current-stage: new-stage,
+                    status: "recalled",
+                    current-owner: tx-sender
+                }
+            )
+        )
+        (update-stage-quantity (get current-stage material) (get quantity material) false)
+        (update-stage-quantity new-stage (get quantity material) true)
         (ok true)
     )
 )
@@ -212,6 +246,14 @@
         (and (is-eq from-stage "mine") (is-eq to-stage "transport"))
         (and (is-eq from-stage "transport") (is-eq to-stage "refinery"))
         (and (is-eq from-stage "refinery") (is-eq to-stage "export"))
+    )
+)
+
+(define-private (is-valid-recall-transition (from-stage (string-ascii 20)) (to-stage (string-ascii 20)))
+    (or
+        (and (is-eq from-stage "export") (is-eq to-stage "refinery"))
+        (and (is-eq from-stage "refinery") (is-eq to-stage "transport"))
+        (and (is-eq from-stage "transport") (is-eq to-stage "mine"))
     )
 )
 
@@ -243,6 +285,33 @@
                 )
             )
         )
+    )
+)
+
+(define-private (batch-register-helper (material-data {material-type: (string-ascii 20), origin-mine: (string-ascii 100), quantity: uint, gps-latitude: (string-ascii 20), gps-longitude: (string-ascii 20), iot-sensor-id: (string-ascii 50)}) (acc (list 10 uint)))
+    (let
+        (
+            (material-id (+ (var-get material-counter) u1))
+        )
+        (map-set materials material-id
+            {
+                material-type: (get material-type material-data),
+                origin-mine: (get origin-mine material-data),
+                quantity: (get quantity material-data),
+                current-owner: tx-sender,
+                current-stage: "mine",
+                status: "registered",
+                created-at: stacks-block-height,
+                gps-latitude: (get gps-latitude material-data),
+                gps-longitude: (get gps-longitude material-data),
+                iot-sensor-id: (get iot-sensor-id material-data),
+                ethical-certificate: false
+            }
+        )
+        (map-set material-history material-id (list))
+        (var-set material-counter material-id)
+        (update-stage-quantity "mine" (get quantity material-data) true)
+        (unwrap-panic (as-max-len? (append acc material-id) u10))
     )
 )
 
