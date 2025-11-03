@@ -378,3 +378,51 @@
 (define-read-only (get-export-quantity)
     (var-get export-quantity)
 )
+
+(define-public (split-material
+    (material-id uint)
+    (splits (list 10 uint)))
+    (let
+        (
+            (material (unwrap! (map-get? materials material-id) ERR_NOT_FOUND))
+            (participant-info (unwrap! (map-get? participants tx-sender) ERR_UNAUTHORIZED))
+            (total-split-quantity (fold + splits u0))
+            (current-history (default-to (list) (map-get? material-history material-id)))
+        )
+        (asserts! (is-eq (get current-owner material) tx-sender) ERR_UNAUTHORIZED)
+        (asserts! (get verified participant-info) ERR_UNAUTHORIZED)
+        (asserts! (is-eq (get quantity material) total-split-quantity) ERR_INVALID_STATUS)
+        (asserts! (> (len splits) u1) ERR_INVALID_STATUS)
+        (map-set materials material-id
+            (merge material { quantity: u0, status: "split" })
+        )
+        (fold split-helper splits {counter: u0, original-id: material-id, history: current-history})
+        (ok true)
+    )
+)
+
+(define-private (split-helper (split-quantity uint) (acc {counter: uint, original-id: uint, history: (list 50 uint)}))
+    (let
+        (
+            (new-id (+ (var-get material-counter) u1))
+            (original-material (unwrap-panic (map-get? materials (get original-id acc))))
+        )
+        (if (> split-quantity u0)
+            (begin
+                (map-set materials new-id
+                    (merge original-material
+                        {
+                            quantity: split-quantity,
+                            status: "registered"
+                        }
+                    )
+                )
+                (map-set material-history new-id (list))
+                (var-set material-counter new-id)
+                (update-stage-quantity (get current-stage original-material) split-quantity true)
+                {counter: (+ (get counter acc) u1), original-id: (get original-id acc), history: (get history acc)}
+            )
+            acc
+        )
+    )
+)

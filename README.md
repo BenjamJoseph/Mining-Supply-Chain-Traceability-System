@@ -231,3 +231,21 @@ Export ← Refinery ← Transport ← Mine
 ### Supply Chain Verification
 
 5. 🚨 Emergency recalls are tracked and can affect certification status
+
+### Material Splitting
+- ✂️ **Material Splitting** - Divide large material batches into smaller, independently tracked units for flexible distribution and processing
+
+### 7. Split Material
+
+```clarity
+(contract-call? .mining-supply-chain split-material
+    u1
+    (list u500 u300 u200))
+```
+
+### Key Functions
+- `split-material` - Split a material into multiple smaller batches with independent tracking
+
+### Supply Chain Verification
+
+6. ✂️ Material splits maintain traceability while enabling flexible supply chain operations
