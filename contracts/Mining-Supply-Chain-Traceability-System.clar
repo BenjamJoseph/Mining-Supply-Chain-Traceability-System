@@ -11,8 +11,9 @@
 (define-data-var transport-quantity uint u0)
 (define-data-var refinery-quantity uint u0)
 (define-data-var export-quantity uint u0)
+(define-data-var quality-check-counter uint u0)
 
-(define-map participants principal 
+(define-map participants principal
     {
         role: (string-ascii 20),
         company-name: (string-ascii 100),
@@ -54,7 +55,18 @@
 
 (define-map material-history uint (list 50 uint))
 
-(define-public (register-participant 
+(define-map quality-checks uint
+    {
+        material-id: uint,
+        checker: principal,
+        check-type: (string-ascii 20),
+        result: (string-ascii 20),
+        timestamp: uint,
+        notes: (string-ascii 100)
+    }
+)
+
+(define-public (register-participant
     (participant principal)
     (role (string-ascii 20))
     (company-name (string-ascii 100))
@@ -241,6 +253,34 @@
     )
 )
 
+(define-public (log-quality-check
+    (material-id uint)
+    (check-type (string-ascii 20))
+    (result (string-ascii 20))
+    (notes (string-ascii 100))
+)
+    (let
+        (
+            (participant-info (unwrap! (map-get? participants tx-sender) ERR_UNAUTHORIZED))
+            (check-id (+ (var-get quality-check-counter) u1))
+        )
+        (asserts! (get verified participant-info) ERR_UNAUTHORIZED)
+        (asserts! (is-some (map-get? materials material-id)) ERR_NOT_FOUND)
+        (map-set quality-checks check-id
+            {
+                material-id: material-id,
+                checker: tx-sender,
+                check-type: check-type,
+                result: result,
+                timestamp: stacks-block-height,
+                notes: notes
+            }
+        )
+        (var-set quality-check-counter check-id)
+        (ok check-id)
+    )
+)
+
 (define-private (is-valid-stage-transition (from-stage (string-ascii 20)) (to-stage (string-ascii 20)))
     (or
         (and (is-eq from-stage "mine") (is-eq to-stage "transport"))
@@ -377,6 +417,10 @@
 
 (define-read-only (get-export-quantity)
     (var-get export-quantity)
+)
+
+(define-read-only (get-quality-check (check-id uint))
+    (map-get? quality-checks check-id)
 )
 
 (define-public (split-material

@@ -23,10 +23,11 @@ The system tracks materials through four key stages:
 - ✅ **Participant Registration** - Verify companies in the supply chain
 - 📋 **Material Registration** - Track materials from source
 - 📦 **Batch Material Registration** - Register multiple materials in a single transaction
-- � **Material Transfers** - Secure handoffs between stages
+- 🔄 **Material Transfers** - Secure handoffs between stages
 - 📍 **GPS Tracking** - Real-time location data
 - 🔍 **IoT Integration** - Sensor data for verification
 - 📜 **Ethical Certificates** - Digital proof of ethical sourcing
+- 🧪 **Quality Assurance Logging** - Log detailed quality checks on materials for enhanced traceability
 
 ### Security & Verification
 - 🛡️ Role-based access control
@@ -85,6 +86,16 @@ The system tracks materials through four key stages:
 (contract-call? .mining-supply-chain issue-ethical-certificate u1)
 ```
 
+### 6. Log Quality Check (Verified Participants Only)
+
+```clarity
+(contract-call? .mining-supply-chain log-quality-check
+    u1
+    "chemical-composition"
+    "pass"
+    "All parameters within acceptable ranges")
+```
+
 ## 📊 Data Queries
 
 ### Get Material Information
@@ -100,6 +111,11 @@ The system tracks materials through four key stages:
 ### Check Certificate Status
 ```clarity
 (contract-call? .mining-supply-chain get-material-certificate u1)
+```
+
+### Get Quality Check
+```clarity
+(contract-call? .mining-supply-chain get-quality-check u1)
 ```
 
 ### View Transfer History
@@ -143,6 +159,7 @@ npm test
 - **materials** - Tracked materials with metadata
 - **transfers** - Transfer transactions between participants
 - **material-history** - Complete audit trail per material
+- **quality-checks** - Quality assurance check records
 
 ### Key Functions
 - `register-participant` - Add verified participants
@@ -150,6 +167,7 @@ npm test
 - `transfer-material` - Move materials between stages
 - `confirm-receipt` - Confirm material delivery
 - `issue-ethical-certificate` - Certify ethical sourcing
+- `log-quality-check` - Log quality assurance checks on materials
 - `verify-supply-chain` - Validate complete chain
 
 ## 📝 Valid Stage Transitions
@@ -181,6 +199,7 @@ The system provides complete traceability:
 2. 📋 Complete transfer history is maintained
 3. 🔍 GPS tracking validates physical movement
 4. 🏆 Digital certificates prove ethical sourcing compliance
+5. 🧪 Quality assurance checks enhance material integrity verification
 
 ## 🤝 Contributing
 
